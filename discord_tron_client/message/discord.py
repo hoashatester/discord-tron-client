@@ -27,6 +27,7 @@ class DiscordMessage(WebsocketMessage):
         image_prompt: str = None,
         image_model: str = None,
         user_id: int = None,
+        message_flags: dict = None,
     ):
         self.websocket = websocket
         if isinstance(context, DiscordMessage):
@@ -57,6 +58,8 @@ class DiscordMessage(WebsocketMessage):
             arguments["image_model"] = image_model
         if user_id is not None:
             arguments["user_id"] = user_id
+        if isinstance(message_flags, dict) and len(message_flags) > 0:
+            arguments["message_flags"] = message_flags
         super().__init__(
             message_type="discord",
             module_name="message",
