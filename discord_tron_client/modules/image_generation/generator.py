@@ -69,19 +69,39 @@ async def generate_image(payload, websocket):
             logging.debug(f"Found image data in payload: {payload['image_data']}")
             import io, requests
 
-            image = Image.open(
-                io.BytesIO(requests.get(payload["image_data"], timeout=10).content)
-            )
-            image = image.resize(
-                (resolution["width"], resolution["height"]), resample=Image.LANCZOS
-            )
-            try:
-                background = Image.new("RGBA", image.size, (255, 255, 255))
-                alpha_composite = Image.alpha_composite(background, image)
-                image = alpha_composite.convert("RGB")
-            except Exception as e:
-                logging.error(f"Error compositing image: {e}")
-                alpha_composite = image
+            def _fetch_reference(url: str):
+                raw = requests.get(url, timeout=12).content
+                ref = Image.open(io.BytesIO(raw))
+                try:
+                    if ref.mode in ("RGBA", "LA"):
+                        background = Image.new("RGBA", ref.size, (255, 255, 255))
+                        alpha_composite = Image.alpha_composite(background, ref.convert("RGBA"))
+                        ref = alpha_composite.convert("RGB")
+                    else:
+                        ref = ref.convert("RGB")
+                except Exception as e:
+                    logging.error(f"Error compositing reference image {url}: {e}")
+                return ref
+
+            image_data = payload["image_data"]
+            if isinstance(image_data, list):
+                refs = []
+                for ref_url in image_data[:10]:
+                    if not isinstance(ref_url, str) or not ref_url.strip():
+                        continue
+                    try:
+                        refs.append(_fetch_reference(ref_url.strip()))
+                    except Exception as e:
+                        logging.error(f"Error loading reference image {ref_url}: {e}")
+                if len(refs) == 1:
+                    image = refs[0]
+                elif len(refs) > 1:
+                    image = refs
+            elif isinstance(image_data, str) and image_data.strip():
+                image = _fetch_reference(image_data.strip())
+                image = image.resize(
+                    (resolution["width"], resolution["height"]), resample=Image.LANCZOS
+                )
         discord_msg = DiscordMessage(
             websocket=websocket,
             context=payload["discord_context"],

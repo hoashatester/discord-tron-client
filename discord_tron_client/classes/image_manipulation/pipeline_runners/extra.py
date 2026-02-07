@@ -70,7 +70,40 @@ class StableCascadePipelineRunner(_DirectPipelineRunner):
 
 
 class Flux2PipelineRunner(_DirectPipelineRunner):
-    pass
+    _allowed_args = {
+        "image",
+        "prompt",
+        "height",
+        "width",
+        "num_inference_steps",
+        "sigmas",
+        "guidance_scale",
+        "num_images_per_prompt",
+        "generator",
+        "latents",
+        "prompt_embeds",
+        "output_type",
+        "return_dict",
+        "attention_kwargs",
+        "callback_on_step_end",
+        "callback_on_step_end_tensor_inputs",
+        "max_sequence_length",
+        "text_encoder_out_layers",
+    }
+
+    def __call__(self, **args: Any):
+        prompt_value = args.get("prompt")
+        if prompt_value is not None:
+            args["prompt"], prompt_parameters = self._extract_parameters(prompt_value)
+            args.update(prompt_parameters)
+        user_config = args.pop("user_config", {}) or {}
+        self.apply_adapters(user_config, model_prefix="model")
+
+        # Flux2 does not accept many SD/SDXL-only kwargs used elsewhere.
+        args = {k: v for k, v in args.items() if k in self._allowed_args}
+        args = self._normalize_args(args)
+        logging.debug(f"Args for Flux2PipelineRunner: {args}")
+        return self._run_pipeline(args)
 
 
 class Kandinsky5ImagePipelineRunner(_DirectPipelineRunner):

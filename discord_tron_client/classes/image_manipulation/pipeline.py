@@ -394,7 +394,11 @@ class PipelineRunner:
                 use_latent_result = False
                 image_return_type = "pil"
             elif Flux2Pipeline is not None and isinstance(pipe, Flux2Pipeline):
-                pipeline_runner = runner_map["text2img"](pipeline=pipe)
+                pipeline_runner = runner_map["flux2"](
+                    pipeline=pipe,
+                    pipeline_manager=self.pipeline_manager,
+                    diffusion_manager=self,
+                )
                 use_latent_result = False
                 image_return_type = "pil"
             elif isinstance(pipe, ZImagePipeline):
