@@ -142,18 +142,22 @@ def _convert_non_diffusers_flux2_lora_to_diffusers(state_dict):
 
 
 def format_text_input(prompts: List[str], system_message: str = None):
-    # Remove [IMG] tokens from prompts to avoid Pixtral validation issues
-    # when truncation is enabled. The processor counts [IMG] tokens and fails
-    # if the count changes after truncation.
-    cleaned_txt = [prompt.replace("[IMG]", "") for prompt in prompts]
+    # Use plain string chat messages; some templates error on multimodal list content.
+    if not isinstance(prompts, list):
+        prompts = [prompts]
+    cleaned_txt = []
+    for prompt in prompts:
+        if isinstance(prompt, list):
+            prompt = " ".join([str(part) for part in prompt if part is not None])
+        else:
+            prompt = str(prompt)
+        cleaned_txt.append(prompt.replace("[IMG]", ""))
 
+    system_text = "" if system_message is None else str(system_message)
     return [
         [
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": system_message}],
-            },
-            {"role": "user", "content": [{"type": "text", "text": prompt}]},
+            {"role": "system", "content": system_text},
+            {"role": "user", "content": prompt},
         ]
         for prompt in cleaned_txt
     ]
@@ -692,6 +696,13 @@ class Flux2Pipeline(DiffusionPipeline, Flux2LoraLoaderMixin):
         device = text_encoder.device if device is None else device
 
         prompt = [prompt] if isinstance(prompt, str) else prompt
+        normalized_prompt = []
+        for item in prompt:
+            if isinstance(item, list):
+                normalized_prompt.append(" ".join([str(x) for x in item if x is not None]))
+            else:
+                normalized_prompt.append(str(item))
+        prompt = normalized_prompt
 
         # Format input messages
         messages_batch = format_text_input(prompts=prompt, system_message=system_message)
