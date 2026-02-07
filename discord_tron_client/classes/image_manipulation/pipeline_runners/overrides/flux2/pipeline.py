@@ -1273,9 +1273,6 @@ class Flux2Pipeline(DiffusionPipeline, Flux2LoraLoaderMixin):
                     continue
 
                 self._current_timestep = t
-                # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
-                timestep = t.expand(latents.shape[0]).to(latents.dtype)
-
                 latent_model_input = latents.to(self.transformer.dtype)
                 latent_image_ids = latent_ids
 
@@ -1283,13 +1280,30 @@ class Flux2Pipeline(DiffusionPipeline, Flux2LoraLoaderMixin):
                     latent_model_input = torch.cat([latents, image_latents], dim=1).to(self.transformer.dtype)
                     latent_image_ids = torch.cat([latent_ids, image_latent_ids], dim=1)
 
+                # Keep all conditioning tensors colocated with transformer hidden states.
+                transformer_device = latent_model_input.device
+                timestep = t.expand(latents.shape[0]).to(
+                    device=transformer_device,
+                    dtype=latent_model_input.dtype,
+                )
+                step_guidance = guidance.to(
+                    device=transformer_device,
+                    dtype=latent_model_input.dtype,
+                )
+                step_prompt_embeds = prompt_embeds.to(
+                    device=transformer_device,
+                    dtype=latent_model_input.dtype,
+                )
+                step_text_ids = text_ids.to(device=transformer_device)
+                step_image_ids = latent_image_ids.to(device=transformer_device)
+
                 noise_pred = self.transformer(
                     hidden_states=latent_model_input,  # (B, image_seq_len, C)
                     timestep=timestep / 1000,
-                    guidance=guidance,
-                    encoder_hidden_states=prompt_embeds,
-                    txt_ids=text_ids,  # B, text_seq_len, 4
-                    img_ids=latent_image_ids,  # B, image_seq_len, 4
+                    guidance=step_guidance,
+                    encoder_hidden_states=step_prompt_embeds,
+                    txt_ids=step_text_ids,  # B, text_seq_len, 4
+                    img_ids=step_image_ids,  # B, image_seq_len, 4
                     joint_attention_kwargs=self._attention_kwargs,
                     return_dict=False,
                 )[0]
