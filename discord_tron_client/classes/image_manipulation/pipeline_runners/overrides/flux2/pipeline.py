@@ -680,6 +680,27 @@ class Flux2Pipeline(DiffusionPipeline, Flux2LoraLoaderMixin):
         # fmt: on
 
     @staticmethod
+    def _force_module_to_device(module: torch.nn.Module, device: torch.device):
+        if module is None:
+            return
+        for _, param in module.named_parameters(recurse=True):
+            if param is None or param.device == device:
+                continue
+            try:
+                param.data = param.data.to(device=device, non_blocking=True)
+                if param.grad is not None:
+                    param.grad.data = param.grad.data.to(device=device, non_blocking=True)
+            except Exception as e:
+                logger.warning(f"Failed to move parameter to {device}: {e}")
+        for _, buffer in module.named_buffers(recurse=True):
+            if buffer is None or buffer.device == device:
+                continue
+            try:
+                buffer.data = buffer.data.to(device=device, non_blocking=True)
+            except Exception as e:
+                logger.warning(f"Failed to move buffer to {device}: {e}")
+
+    @staticmethod
     def _get_mistral_3_small_prompt_embeds(
         text_encoder: Mistral3ForConditionalGeneration,
         tokenizer: AutoProcessor,
@@ -1180,7 +1201,33 @@ class Flux2Pipeline(DiffusionPipeline, Flux2LoraLoaderMixin):
         else:
             batch_size = prompt_embeds.shape[0]
 
-        device = self._execution_device
+        requested_device = self._execution_device
+
+        # Ensure core modules are colocated before inference. Mixed placement can
+        # happen with pipeline caching/offloading and causes matmul device errors.
+        try:
+            self.transformer.to(requested_device)
+        except Exception as e:
+            logger.warning(f"Could not move Flux2 transformer to {requested_device}: {e}")
+        try:
+            self.text_encoder.to(requested_device)
+        except Exception as e:
+            logger.warning(f"Could not move Flux2 text_encoder to {requested_device}: {e}")
+        try:
+            self.vae.to(requested_device)
+        except Exception as e:
+            logger.warning(f"Could not move Flux2 VAE to {requested_device}: {e}")
+
+        if isinstance(requested_device, str):
+            requested_device = torch.device(requested_device)
+        self._force_module_to_device(self.transformer, requested_device)
+        self._force_module_to_device(self.text_encoder, requested_device)
+        self._force_module_to_device(self.vae, requested_device)
+
+        try:
+            device = next(self.transformer.parameters()).device
+        except Exception:
+            device = requested_device
 
         # 3. prepare text embeddings
         prompt_embeds, text_ids = self.encode_prompt(

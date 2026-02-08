@@ -39,54 +39,63 @@ try:
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    PixArtSigmaPipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.z_image import (
         ZImagePipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    ZImagePipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.stable_cascade.pipeline_combined import (
         StableCascadeCombinedPipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    StableCascadeCombinedPipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.ace_step.pipeline import (
         ACEStepPipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    ACEStepPipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.flux2.pipeline import (
         Flux2Pipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    Flux2Pipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.kandinsky5_image.pipeline_kandinsky5_t2i import (
         Kandinsky5T2IPipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    Kandinsky5T2IPipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.kandinsky5_video.pipeline_kandinsky5_t2v import (
         Kandinsky5T2VPipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    Kandinsky5T2VPipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.cosmos.pipeline import (
         Cosmos2TextToImagePipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    Cosmos2TextToImagePipeline = None
 try:
     from discord_tron_client.classes.image_manipulation.pipeline_runners.overrides.wan.pipeline import (
         WanPipeline,
     )
 except Exception as e:
     logging.error(f"Could not import dependency: {e}")
+    WanPipeline = None
 from diffusers import Lumina2Pipeline, OmniGenPipeline
 from diffusers import DiffusionPipeline as Pipeline
 from typing import Dict

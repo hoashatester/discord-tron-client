@@ -1,12 +1,35 @@
 import random, asyncio
-from .ws_client import websocket_client
 import logging
 from discord_tron_client.classes import log_format
+from discord_tron_client.classes.app_config import AppConfig
+from discord_tron_client.classes.api_client import ApiClient
+
+
+def _apply_protobuf_compat():
+    """
+    Compatibility shim for environments with protobuf>=5 where GetPrototype
+    was removed. Several ML deps still invoke this older API.
+    """
+    try:
+        from google.protobuf import message_factory, symbol_database
+
+        if not hasattr(message_factory.MessageFactory, "GetPrototype"):
+            def _message_factory_get_prototype(self, descriptor):
+                return message_factory.GetMessageClass(descriptor)
+            message_factory.MessageFactory.GetPrototype = _message_factory_get_prototype
+
+        if not hasattr(symbol_database.SymbolDatabase, "GetPrototype"):
+            def _symbol_database_get_prototype(self, descriptor):
+                return message_factory.GetMessageClass(descriptor)
+            symbol_database.SymbolDatabase.GetPrototype = _symbol_database_get_prototype
+    except Exception as e:
+        logging.debug(f"Protobuf compatibility patch not applied: {e}")
+
+
+_apply_protobuf_compat()
 from discord_tron_client.classes.image_manipulation.diffusion import (
     DiffusionPipelineManager,
 )
-from discord_tron_client.classes.app_config import AppConfig
-from discord_tron_client.classes.api_client import ApiClient
 
 config = AppConfig()
 config.set_pipeline_manager(DiffusionPipelineManager())
@@ -14,6 +37,7 @@ config.set_pipeline_manager(DiffusionPipelineManager())
 
 def main():
     try:
+        from .ws_client import websocket_client
         # Detect an expired token.
         logging.info("Inspecting auth ticket...")
         from discord_tron_client.classes.auth import Auth
