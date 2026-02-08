@@ -11,7 +11,7 @@ packages = [{include = "discord_tron_client"}]
 client = "discord_tron_client.__main__:main"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.11,<3.13"
 websockets = "^10.4"
 flask = "^2.2.3"
 psutil = "^5.9.4"
