@@ -11,6 +11,7 @@ class AppConfig:
     main_pipelinemanager = None
     main_pipelinerunner = None
     main_websocket = None
+    main_ollama_runtime = None
     image_processing_executor = None
 
     # Initialize the config object.
@@ -53,6 +54,18 @@ class AppConfig:
     @classmethod
     def get_websocket(cls):
         return cls.main_websocket
+
+    @classmethod
+    def set_ollama_runtime(cls, runtime):
+        cls.main_ollama_runtime = runtime
+
+    @classmethod
+    def get_ollama_runtime(cls):
+        if cls.main_ollama_runtime is None:
+            from discord_tron_client.classes.ollama_runtime import OllamaRuntime
+
+            cls.main_ollama_runtime = OllamaRuntime(AppConfig())
+        return cls.main_ollama_runtime
 
     @classmethod
     def get_image_worker_thread(cls):
@@ -300,6 +313,23 @@ class AppConfig:
 
     def is_bark_enabled(self):
         return self.get_config_value("enable_bark", True)
+
+    def is_ollama_enabled(self):
+        return self.get_config_value("enable_ollama", False)
+
+    def get_ollama_base_url(self):
+        return str(
+            self.get_config_value("ollama", {}).get("base_url", "http://127.0.0.1:11434")
+        ).rstrip("/")
+
+    def get_ollama_model_default(self):
+        return self.get_config_value("ollama", {}).get("model", "llama3.1")
+
+    def get_ollama_keep_alive(self):
+        return self.get_config_value("ollama", {}).get("keep_alive", "30m")
+
+    def get_ollama_timeout_seconds(self):
+        return int(self.get_config_value("ollama", {}).get("timeout_seconds", 600))
 
     def bark_subsystem_type(self):
         return self.get_config_value("bark_subsystem", "torch")

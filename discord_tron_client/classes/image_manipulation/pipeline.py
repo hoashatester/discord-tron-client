@@ -659,6 +659,11 @@ class PipelineRunner:
         promptless_variation: bool = False,
         upscaler: bool = False,
     ):
+        if self.config.is_ollama_enabled():
+            try:
+                AppConfig.get_ollama_runtime().prepare_for_diffusion()
+            except Exception as exc:
+                logging.warning(f"Failed preparing GPU for diffusion by unloading Ollama: {exc}")
         resolution = {"width": side_x, "height": side_y}
         pipe = await self._prepare_pipe_async(
             user_config,

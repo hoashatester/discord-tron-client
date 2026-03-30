@@ -25,6 +25,13 @@
     "enable_llama": false,
     "enable_stablelm": false,
     "enable_stablevicuna": false,
+    "enable_ollama": false,
+    "ollama": {
+        "base_url": "http://127.0.0.1:11434",
+        "model": "llama3.1",
+        "keep_alive": "30m",
+        "timeout_seconds": 600
+    },
     "enable_sequential_offload": false,
     "enable_offload": false
 }

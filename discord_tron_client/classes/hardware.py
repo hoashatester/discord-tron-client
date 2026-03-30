@@ -73,6 +73,7 @@ class HardwareInfo:
             "stablelm": config.is_stablelm_enabled(),
             "stablevicuna": config.is_stablevicuna_enabled(),
             "tts_bark": config.is_bark_enabled(),
+            "ollama": config.is_ollama_enabled(),
         }
         if (
             config.enable_diffusion()

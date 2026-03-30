@@ -29,7 +29,7 @@ async def websocket_client(
     processor = WorkerProcessor()
     concurrent_slots = config.get_concurrent_slots()
     general_semaphore = asyncio.Semaphore(concurrent_slots)
-    gpu_semaphore = asyncio.Semaphore(concurrent_slots)
+    gpu_semaphore = asyncio.Semaphore(1)
     llama_semaphore = asyncio.Semaphore(concurrent_slots)
     while True:
         try:
@@ -119,7 +119,7 @@ async def websocket_client(
                                     module_command="acknowledge",
                                 ).to_json()
                             )
-                        if payload["job_type"] == "gpu":
+                        if payload["job_type"] in {"gpu", "ollama"}:
                             logging.debug("Using GPU-specific semaphore")
                             semaphore = gpu_semaphore
                         if payload["job_type"] == "llama":

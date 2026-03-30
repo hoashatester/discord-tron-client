@@ -7,6 +7,7 @@ from discord_tron_client.classes.llm.llama.factory import LlamaFactory
 from discord_tron_client.classes.llm.stablelm.factory import StableLMFactory
 from discord_tron_client.classes.llm.stable_vicuna.factory import StableVicunaFactory
 from discord_tron_client.classes.tts.bark.factory import BarkFactory
+from discord_tron_client.classes.ollama_worker import OllamaWorker
 from typing import Dict, Any
 import logging, json, websocket
 from discord_tron_client.classes.app_config import AppConfig
@@ -28,6 +29,7 @@ except:
     logging.warn("Could not retrieve a StableVicuna driver.")
 
 identifier = HardwareInfo.get_identifier()
+ollama_worker = OllamaWorker()
 
 
 class WorkerProcessor:
@@ -47,6 +49,7 @@ class WorkerProcessor:
             "stablelm": {"predict": stablelmrunner.predict_handler},
             "stablevicuna": {"predict": stablevicunarunner.predict_handler},
             "tts_bark": {"generate": BarkFactory.get().generate_handler},
+            "ollama": {"complete": ollama_worker.complete_handler},
             # Add more command handlers as needed
         }
 
